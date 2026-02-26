@@ -53,7 +53,34 @@ def diabetes_linear_pipeline():
         top_3_feature_indices (list length 3)
     """
 
-    raise NotImplementedError
+    diabetes = load_diabetes()
+    X = diabetes.data
+    y = diabetes.target
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
+
+    scaler = StandardScaler()
+    X_train_scaled = scaler.fit_transform(X_train)
+    X_test_scaled = scaler.transform(X_test)
+
+    model = LinearRegression()
+    model.fit(X_train_scaled, y_train)
+
+    y_train_pred = model.predict(X_train_scaled)
+    y_test_pred = model.predict(X_test_scaled)
+
+    train_mse = mean_squared_error(y_train, y_train_pred)
+    test_mse = mean_squared_error(y_test, y_test_pred)
+
+    train_r2 = r2_score(y_train, y_train_pred)
+    test_r2 = r2_score(y_test, y_test_pred)
+
+    abs_coefficients = np.abs(model.coef_)
+    top_3_feature_indices = np.argsort(abs_coefficients)[-3:][::-1].tolist()
+
+    return train_mse, test_mse, train_r2, test_r2, top_3_feature_indices
 
 
 # =========================================================
@@ -78,7 +105,20 @@ def diabetes_cross_validation():
         std_r2
     """
 
-    raise NotImplementedError
+    diabetes = load_diabetes()
+    X = diabetes.data
+    y = diabetes.target
+
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X)
+
+    model = LinearRegression()
+    cv_scores = cross_val_score(model, X_scaled, y, cv=5, scoring='r2')
+
+    mean_r2 = cv_scores.mean()
+    std_r2 = cv_scores.std()
+
+    return mean_r2, std_r2
 
 
 # =========================================================
@@ -111,7 +151,34 @@ def cancer_logistic_pipeline():
         f1
     """
 
-    raise NotImplementedError
+    cancer = load_breast_cancer()
+    X = cancer.data
+    y = cancer.target
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
+
+    scaler = StandardScaler()
+    X_train_scaled = scaler.fit_transform(X_train)
+    X_test_scaled = scaler.transform(X_test)
+
+    model = LogisticRegression(max_iter=5000, random_state=42)
+    model.fit(X_train_scaled, y_train)
+
+    y_train_pred = model.predict(X_train_scaled)
+    y_test_pred = model.predict(X_test_scaled)
+
+    train_accuracy = accuracy_score(y_train, y_train_pred)
+    test_accuracy = accuracy_score(y_test, y_test_pred)
+
+    precision = precision_score(y_test, y_test_pred)
+    recall = recall_score(y_test, y_test_pred)
+    f1 = f1_score(y_test, y_test_pred)
+
+    # False Negative: Model predicts no cancer when patient actually has cancer
+
+    return train_accuracy, test_accuracy, precision, recall, f1
 
 
 # =========================================================
@@ -142,7 +209,35 @@ def cancer_logistic_regularization():
         results_dictionary
     """
 
-    raise NotImplementedError
+    cancer = load_breast_cancer()
+    X = cancer.data
+    y = cancer.target
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
+
+    scaler = StandardScaler()
+    X_train_scaled = scaler.fit_transform(X_train)
+    X_test_scaled = scaler.transform(X_test)
+
+    C_values = [0.01, 0.1, 1, 10, 100]
+    results = {}
+
+    for C in C_values:
+        model = LogisticRegression(max_iter=5000, C=C, random_state=42)
+        model.fit(X_train_scaled, y_train)
+
+        train_accuracy = accuracy_score(y_train, model.predict(X_train_scaled))
+        test_accuracy = accuracy_score(y_test, model.predict(X_test_scaled))
+
+        results[C] = (train_accuracy, test_accuracy)
+
+    # Small C: strong regularization, underfitting
+    # Large C: weak regularization, overfitting
+    # Overfitting occurs when C is large
+
+    return results
 
 
 # =========================================================
@@ -170,4 +265,20 @@ def cancer_cross_validation():
         std_accuracy
     """
 
-    raise NotImplementedError
+    cancer = load_breast_cancer()
+    X = cancer.data
+    y = cancer.target
+
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X)
+
+    model = LogisticRegression(C=1, max_iter=5000, random_state=42)
+    cv_scores = cross_val_score(model, X_scaled, y, cv=5, scoring='accuracy')
+
+    mean_accuracy = cv_scores.mean()
+    std_accuracy = cv_scores.std()
+
+    # CV is important in medical diagnosis for reliable performance estimation,
+    # better use of limited medical data, and ensuring model generalization
+
+    return mean_accuracy, std_accuracy
