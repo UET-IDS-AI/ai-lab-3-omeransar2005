@@ -1,4 +1,4 @@
-import AI_stats_lab as amt
+import AI_stats_lab as A
 
 
 def test_diabetes_pipeline():
